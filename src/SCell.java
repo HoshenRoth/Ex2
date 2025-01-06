@@ -130,14 +130,14 @@ public class SCell implements Cell {
     }
 
     public static class computForm {
-        private ArrayList<double> priorties;
+        private ArrayList<Double> priorties;
         private String formula;
         private final double MULTIPLY_PRIORITY = 0.1;
-        private final double ADD_PRIORITY = 0.5:
+        private final double ADD_PRIORITY = 0.5;
 
         public computForm(String formula) {
             this.formula = formula;
-            this.priorties = new ArrayList<>();
+            this.priorties = new ArrayList<Double>();
             mapPriorities();
         }
 
@@ -192,20 +192,14 @@ public class SCell implements Cell {
             char operator = formula.charAt(opIndex);
             if (operator == '+') {
                 result = num1 + num2;
-            } else {
-                if (operator == '-') {
-                    result = num1 - num2;
-                }
+            } else if (operator == '-') {
+                result = num1 - num2;
             }
-            else{
-                if (operator == '*') {
-                    result = num1 * num2;
-                }
+            else  if (operator == '*') {
+                result = num1 * num2;
             }
-            else{
-                if (operator == '/') {
-                    result = num1 / num2;
-                }
+            else  if (operator == '/') {
+                result = num1 / num2;
             }
             return result;
         }
