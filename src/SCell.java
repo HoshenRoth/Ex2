@@ -5,11 +5,16 @@ import java.util.ArrayList;
 public class SCell implements Cell {
     private String line;
     private int type;
+    private Ex2Sheet sheet;
     // Add your code here
 
     public SCell(String s) {
         // Add your code here
         setData(s);
+    }
+
+    public void setSeet(Ex2Sheet sheet){
+        this.sheet= sheet;
     }
 
     @Override
@@ -22,7 +27,6 @@ public class SCell implements Cell {
         return 0;
     }
 
-    //@Override
     @Override
     public String toString() {
         if(isForm(getData())){
@@ -125,12 +129,29 @@ public class SCell implements Cell {
                 || (c >= 'A' && c <= 'Z');
     }
 
+    private static double evalCellCall(String cellCall){
+        char columm= cellCall.charAt(0);
+        int row= Integer.parseInt(cellCall.substring(1));
+        int x= columm= 'A';
+        Cell cell= Ex2Sheet.getStaticCell(x, row);
+        if(cell!=null){
+            if (cell.getType()==Ex2Utils.NUMBER){
+                return Double.parseDouble(cell.getData());
+            } else if (cell.getType()==Ex2Utils.FORM) {
+                return computForm(cell.getData());
+            }
+        }
+        return 0;
+    }
 
     public static double computForm(String text) {
         if(!isForm(text)){
             return -1;
         }
         String formula= text.substring(1);
+        if(formula.matches("[A-Z]\\d+")){
+            return evalCellCall(formula);
+        }
         computForm calculator= new computForm(formula);
         return calculator.calculate();
     }

@@ -1,16 +1,25 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 
 public class Ex2Sheet implements Sheet {
     private Cell[][] table;
     private Map<String, Boolean> visited;
 
+    private static Ex2Sheet intance;
+
+    public static void setIntance(Ex2Sheet sheet){
+        intance= sheet;
+    }
+
+    public static Cell getStaticCell(int x, int y){
+        return intance.get(x, y);
+    }
 
     public Ex2Sheet(int x, int y) {
         table = new SCell[x][y];
+        intance= this;
         for(int i=0; i<x; i++) {
             for(int j=0; j<y; j++) {
                 table[i][j] = new SCell("");
@@ -37,9 +46,8 @@ public class Ex2Sheet implements Sheet {
     public Cell get(int x, int y) {
         if(isIn(x, y)){
             return table[x][y];
-        } else {
-            return null;
         }
+        return null;
     }
 
     @Override
