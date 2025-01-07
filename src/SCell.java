@@ -25,14 +25,23 @@ public class SCell implements Cell {
     //@Override
     @Override
     public String toString() {
+        if(isForm(getData())){
+            double value= computForm(getData());
+            return String.valueOf(value);
+        }
         return getData();
     }
 
     @Override
     public void setData(String s) {
-        // Add your code here
         line = s;
-        /////////////////////
+        if(isForm(s)){
+            setType(Ex2Utils.NUMBER);
+        } else if (isForm(s)) {
+            setType(Ex2Utils.FORM);
+        } else {
+            setType(Ex2Utils.TEXT);
+        }
     }
 
     @Override
@@ -116,94 +125,89 @@ public class SCell implements Cell {
                 || (c >= 'A' && c <= 'Z');
     }
 
+
     public static double computForm(String text) {
-        boolean isValid = isForm(text);
-        if (!isValid) {
+        if(!isForm(text)){
             return -1;
         }
-        try {
-            double num = Double.parseDouble(text);
-        } catch (NumberFormatException e) {
-            return -1;
-        }
-        return -1;
+        String formula= text.substring(1);
+        computForm calculator= new computForm(formula);
+        return calculator.calculate();
     }
 
-    public static class computForm {
-        private ArrayList<Double> priorties;
-        private String formula;
-        private final double MULTIPLY_PRIORITY = 0.1;
-        private final double ADD_PRIORITY = 0.5;
+   public static class computForm {
+       private ArrayList<Double> priorties;
+       private String formula;
+       private final double MULTIPLY_PRIORITY = 0.1;
+       private final double ADD_PRIORITY = 0.5;
 
-        public computForm(String formula) {
-            this.formula = formula;
-            this.priorties = new ArrayList<Double>();
-            mapPriorities();
-        }
+       public computForm(String formula) {
+           this.formula = formula;
+           this.priorties = new ArrayList<Double>();
+           mapPriorities();
+       }
 
-        private void mapPriorities() {
-            for (int i = 0; i < formula.length(); i++) {
-                char c = formula.charAt(i);
-                if (Character.isDigit(c)) {
-                    priorties.add(null);
-                } else {
-                    if (c == '+' || c == '-') {
-                        priorties.add(ADD_PRIORITY + i);
-                    } else {
-                        if (c == '*' || c == '/') {
-                            priorties.add(MULTIPLY_PRIORITY + i);
-                        }
-                    }
-                }
-            }
-        }
+       private void mapPriorities() {
+           for (int i = 0; i < formula.length(); i++) {
+               char c = formula.charAt(i);
+               if (Character.isDigit(c)) {
+                   priorties.add(null);
+               } else {
+                   if (c == '+' || c == '-') {
+                       priorties.add(ADD_PRIORITY + i);
+                   } else {
+                       if (c == '*' || c == '/') {
+                           priorties.add(MULTIPLY_PRIORITY + i);
+                       }
+                   }
+               }
+           }
+       }
 
-        private int findNextOperation() {
-            double minPriority = Double.MAX_VALUE;
-            int minIndex = -1;
-            for (int i = 0; i < priorties.size(); i++) {
-                if (priorties.get(i) != null && priorties.get(i) < minPriority) {
-                    minPriority = priorties.get(i);
-                    minIndex = i;
-                }
-            }
-            return minIndex;
-        }
+       private int findNextOperation() {
+           double minPriority = Double.MAX_VALUE;
+           int minIndex = -1;
+           for (int i = 0; i < priorties.size(); i++) {
+               if (priorties.get(i) != null && priorties.get(i) < minPriority) {
+                   minPriority = priorties.get(i);
+                   minIndex = i;
+               }
+           }
+           return minIndex;
+       }
 
-        public double calculate() {
-            if (formula.length() == 1) {
-                return Double.parseDouble(formula);
-            }
-            int opIndex = findNextOperation();
-            if (opIndex == -1) {
-                return Double.parseDouble(formula);
-            }
-            double result = getResult(opIndex);
-            String newFornula = formula.substring(0, opIndex - 1) + result +
-                    formula.substring(opIndex + 2);
-            computForm newClac = new computForm(newFornula);
-            return newClac.calculate();
-        }
+       public double calculate() {
+           if (formula.length() == 1) {
+               return Double.parseDouble(formula);
+           }
+           int opIndex = findNextOperation();
+           if (opIndex == -1) {
+               return Double.parseDouble(formula);
+           }
+           double result = getResult(opIndex);
+           String newFornula = formula.substring(0, opIndex - 1) + result +
+                   formula.substring(opIndex + 2);
+           computForm newClac = new computForm(newFornula);
+           return newClac.calculate();
+       }
 
-        private double getResult(int opIndex) {
-            double num1 = Double.parseDouble(formula.substring(opIndex - 1, opIndex));
-            double num2 = Double.parseDouble(formula.substring(opIndex + 1, opIndex + 2));
-            double result = 0;
-            char operator = formula.charAt(opIndex);
-            if (operator == '+') {
-                result = num1 + num2;
-            } else if (operator == '-') {
-                result = num1 - num2;
-            }
-            else  if (operator == '*') {
-                result = num1 * num2;
-            }
-            else  if (operator == '/') {
-                result = num1 / num2;
-            }
-            return result;
-        }
-    }
+       private double getResult(int opIndex) {
+           double num1 = Double.parseDouble(formula.substring(opIndex - 1, opIndex));
+           double num2 = Double.parseDouble(formula.substring(opIndex + 1, opIndex + 2));
+           double result = 0;
+           char operator = formula.charAt(opIndex);
+           if (operator == '+') {
+               result = num1 + num2;
+           } else if (operator == '-') {
+               result = num1 - num2;
+           } else if (operator == '*') {
+               result = num1 * num2;
+           } else if (operator == '/') {
+               result = num1 / num2;
+           }
+           return result;
+       }
+   }
 }
 
 
