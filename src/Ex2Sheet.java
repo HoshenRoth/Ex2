@@ -87,29 +87,24 @@ public class Ex2Sheet implements Sheet {
         if (!isIn(x, y)) {
             return 0;
         }
-
         Cell cell = get(x, y);
         if (cell == null || cell.getData() == null || cell.getData().isEmpty() ||
             (cell.getType() != Ex2Utils.FORM)) {
             return 0;
         }
-
         String cellId = x + "," + y;
         if (visited.contains(cellId)) {
             return Ex2Utils.ERR_CYCLE_FORM;
         }
-
         visited.add(cellId);
         String data = cell.getData();
         Pattern pattern = Pattern.compile("[A-Za-z][0-9]+");
         Matcher matcher = pattern.matcher(data);
-
         int maxDepth = 0;
         while (matcher.find()) {
             String cellRef = matcher.group();
             int column = Character.toUpperCase(cellRef.charAt(0)) - 'A';
             int row = Integer.parseInt(cellRef.substring(1));
-
             int refDepth = calculateCellDepth(column, row, visited);
             if (refDepth == Ex2Utils.ERR_CYCLE_FORM) {
                 visited.remove(cellId);
@@ -117,7 +112,6 @@ public class Ex2Sheet implements Sheet {
             }
             maxDepth = Math.max(maxDepth, refDepth);
         }
-
         visited.remove(cellId);
         return maxDepth + 1;
     }
@@ -160,88 +154,58 @@ public class Ex2Sheet implements Sheet {
         if (!isIn(x, y)) {
             return Ex2Utils.ERR_FORM;
         }
-
         Cell cell = get(x, y);
-        if (cell == null) {
+        if (cell == null || cell.getData().isEmpty()) {
             return Ex2Utils.EMPTY_CELL;
         }
-
         int cellType = cell.getType();
         String cellData = cell.getData();
-
-        if (cellType == Ex2Utils.TEXT || cellData.isEmpty()) {
+        if (cellType == Ex2Utils.NUMBER) {
             return cellData;
         }
-
-        if (cellType == Ex2Utils.NUMBER) {
-            try {
-                double num = Double.parseDouble(cellData);
-                return String.valueOf(num);
-            } catch (NumberFormatException e) {
-                return Ex2Utils.ERR_FORM;
-            }
+        if (cellType == Ex2Utils.TEXT) {
+            return cellData;
         }
-
         if (cellType == Ex2Utils.FORM) {
             return evaluateFormula(x, y, new HashSet<>());
         }
-
-        if (cellType == Ex2Utils.ERR_CYCLE_FORM) {
-            return Ex2Utils.ERR_CYCLE;
-        }
-
         return Ex2Utils.ERR_FORM;
     }
 
-    private String evaluateFormula(int x, int y, Set<String> visited) {
-        Cell cell = get(x, y);
-        String cellId = x + "," + y;
-
-        if (visited.contains(cellId)) {
-            return Ex2Utils.ERR_CYCLE;
-        }
-
-        visited.add(cellId);
-        String formula = cell.getData().substring(1); // Remove the '='
-
-        Pattern pattern = Pattern.compile("[A-Za-z][0-9]+");
-        Matcher matcher = pattern.matcher(formula);
-        StringBuffer result = new StringBuffer();
-
-        while (matcher.find()) {
-            String cellRef = matcher.group();
-            int refCol = Character.toUpperCase(cellRef.charAt(0)) - 'A';
-            int refRow = Integer.parseInt(cellRef.substring(1));
-
-            if (!isIn(refCol, refRow)) {
-                matcher.appendReplacement(result, Ex2Utils.ERR_FORM);
-                continue;
-            }
-
-            String refValue = evaluateFormula(refCol, refRow, visited);
-            if (refValue.equals(Ex2Utils.ERR_CYCLE) || refValue.equals(Ex2Utils.ERR_FORM)) {
-                matcher.appendReplacement(result, refValue);
-                continue;
-            }
-
-            try {
-                Double.parseDouble(refValue);
-                matcher.appendReplacement(result, refValue);
-            } catch (NumberFormatException e) {
-                matcher.appendReplacement(result, "0");
-            }
-        }
-
-        matcher.appendTail(result);
-        visited.remove(cellId);
-
-        try {
-            double computedResult = SCell.computForm("=" + result.toString());
-            return String.valueOf(computedResult);
-        } catch (Exception e) {
-            return Ex2Utils.ERR_FORM;
-        }
-    }
+  private String evaluateFormula(int x, int y, Set<String> visited) {
+      Cell cell = get(x, y);
+      String cellId = x + "," + y;
+      if (visited.contains(cellId)) {
+          return Ex2Utils.ERR_CYCLE;
+      }
+      visited.add(cellId);
+      String formula = cell.getData().substring(1); // Remove the '='
+      Pattern pattern = Pattern.compile("[A-Za-z][0-9]+");
+      Matcher matcher = pattern.matcher(formula);
+      StringBuffer result = new StringBuffer();
+      while (matcher.find()) {
+          String cellRef = matcher.group();
+          CellEntry refEntry = CellEntry.parseCellReference(cellRef);
+          if (refEntry == null || !isIn(refEntry.getX(), refEntry.getY())) {
+              matcher.appendReplacement(result, Ex2Utils.ERR_FORM);
+              continue;
+          }
+          String refValue = eval(refEntry.getX(), refEntry.getY());
+          if (refValue.equals(Ex2Utils.ERR_CYCLE) || refValue.equals(Ex2Utils.ERR_FORM)) {
+              matcher.appendReplacement(result, refValue);
+              continue;
+          }
+          matcher.appendReplacement(result, refValue);
+      }
+      matcher.appendTail(result);
+      visited.remove(cellId);
+      try {
+          double computedResult = SCell.computForm("=" + result.toString());
+          return String.valueOf(computedResult);
+      } catch (Exception e) {
+          return Ex2Utils.ERR_FORM;
+      }
+  }
 
     @Override
     public Cell get(int x, int y) {
@@ -253,7 +217,6 @@ public class Ex2Sheet implements Sheet {
         if (coords == null || coords.length() < 2) {
             return null;
         }
-
         try {
             char colChar = Character.toUpperCase(coords.charAt(0));
             int x = colChar - 'A';

@@ -1,89 +1,77 @@
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
+public class CellEntry implements Index2D {
+    private final int x;
+    private final int y;
 
-public class CellEntry {
-    private int x;
-    private int y;
-    private boolean valid;
-
-    public CellEntry(String entry) {
-        parseEntry(entry);
+    public CellEntry(int x, int y) {
+        this.x = x;
+        this.y = y;
     }
 
-    private void parseEntry(String entry) {
-        if (entry == null || entry.length() < 2) {
-            valid = false;
-            return;
+    public static CellEntry parseCellReference(String ref) {
+        if (ref == null || ref.length() < 2) {
+            return null;
         }
-
-        Pattern pattern = Pattern.compile("^([A-Za-z]+)([0-9]+)$");
-        Matcher matcher = pattern.matcher(entry);
-
-        if (!matcher.matches()) {
-            valid = false;
-            return;
-        }
-
         try {
-            String columnPart = matcher.group(1).toUpperCase();
-            String rowPart = matcher.group(2);
-
-            x = convertColumnToIndex(columnPart);
-            y = Integer.parseInt(rowPart) - 1; // Convert 1-based to 0-based index
-
-            valid = x >= 0 && y >= 0;
-        } catch (Exception e) {
-            valid = false;
-        }
-    }
-
-    private int convertColumnToIndex(String column) {
-        int index = 0;
-        for (char c : column.toCharArray()) {
-            if (c < 'A' || c > 'Z') {
-                throw new IllegalArgumentException("Invalid column character: " + c);
+            char columnChar = Character.toUpperCase(ref.charAt(0));
+            if (columnChar < 'A' || columnChar > 'Z') {
+                return null;
             }
-            index = index * 26 + (c - 'A' + 1);
+            int x = columnChar - 'A';
+            int y = Integer.parseInt(ref.substring(1));
+            if (y < 0 || y >= Ex2Utils.HEIGHT) {
+                return null;
+            }
+            if (x < 0 || x >= Ex2Utils.WIDTH) {
+                return null;
+            }
+            return new CellEntry(x, y);
+        } catch (NumberFormatException e) {
+            return null;
         }
-        return index - 1; // Convert 1-based to 0-based index
     }
 
+    public static String toCellReference(int x, int y) {
+        if (!isValidPosition(x, y)) {
+            return null;
+        }
+        char column = (char) ('A' + x);
+        return column + String.valueOf(y);
+    }
+
+    private static boolean isValidPosition(int x, int y) {
+        return x >= 0 && x < Ex2Utils.WIDTH && y >= 0 && y < Ex2Utils.HEIGHT;
+    }
+
+    @Override
     public boolean isValid() {
-        return valid;
+        return isValidPosition(x, y);
     }
 
+    @Override
     public int getX() {
-        return x;
+        return isValid() ? x : Ex2Utils.ERR;
     }
 
+    @Override
     public int getY() {
-        return y;
+        return isValid() ? y : Ex2Utils.ERR;
     }
 
     @Override
     public String toString() {
-        if (!valid) {
-            return "Invalid Cell Entry";
-        }
-
-        StringBuilder columnPart = new StringBuilder();
-        int tempX = x + 1; // Convert 0-based to 1-based index
-
-        while (tempX > 0) {
-            int remainder = (tempX - 1) % 26;
-            columnPart.insert(0, (char) ('A' + remainder));
-            tempX = (tempX - 1) / 26;
-        }
-
-        return columnPart.toString() + (y + 1); // Convert 0-based to 1-based index for row
+        return isValid() ? toCellReference(x, y) : "";
     }
 
-    public static boolean isValidEntry(String entry) {
-        if (entry == null || entry.length() < 2) {
-            return false;
-        }
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof CellEntry)) return false;
+        CellEntry other = (CellEntry) obj;
+        return x == other.x && y == other.y;
+    }
 
-        Pattern pattern = Pattern.compile("^[A-Za-z]+[0-9]+$");
-        return pattern.matcher(entry).matches();
+    @Override
+    public int hashCode() {
+        return 31 * x + y;
     }
 }

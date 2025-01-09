@@ -58,7 +58,6 @@ public class SCell implements Cell {
         if (type != Ex2Utils.FORM) {
             return 0;
         }
-
         List<String> dependencies = findCellReferences(data.substring(1));
         if (dependencies.isEmpty()) {
             return 1;
@@ -71,7 +70,6 @@ public class SCell implements Cell {
             setType(Ex2Utils.TEXT);
             return;
         }
-
         if (data.startsWith("=")) {
             if (isForm(data)) {
                 setType(Ex2Utils.FORM);
@@ -80,7 +78,6 @@ public class SCell implements Cell {
             }
             return;
         }
-
         try {
             Double.parseDouble(data);
             setType(Ex2Utils.NUMBER);
@@ -103,29 +100,20 @@ public class SCell implements Cell {
         if (txt == null || !txt.startsWith("=") || txt.contains(" ")) {
             return false;
         }
-
         String formula = txt.substring(1);
         if (formula.isEmpty()) {
             return false;
         }
-
-        // Check for valid cell reference format
         if (formula.matches("[A-Za-z][0-9]+")) {
             return true;
         }
-
-        // Check for basic number
         if (formula.matches("-?\\d+(\\.\\d+)?")) {
             return true;
         }
-
-        // Check for valid formula structure
         int parentheses = 0;
-        boolean lastWasOperator = true; // To prevent starting with an operator
-
+        boolean lastWasOperator = true;
         for (int i = 0; i < formula.length(); i++) {
             char c = formula.charAt(i);
-
             if (c == '(') {
                 parentheses++;
                 lastWasOperator = true;
@@ -144,11 +132,9 @@ public class SCell implements Cell {
                 lastWasOperator = true;
                 continue;
             }
-
             if (!isValidChar(c)) return false;
             lastWasOperator = false;
         }
-
         return parentheses == 0 && !lastWasOperator;
     }
 
@@ -161,17 +147,14 @@ public class SCell implements Cell {
                 || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
     }
 
-    public static double computForm(String text) {
+  /*  public static double computForm(String text) {
         text = text.trim();
         if (text.startsWith("=")) {
             text = text.substring(1);
         }
-
-        // Remove outer parentheses if they match
         while (text.startsWith("(") && text.endsWith(")") && isBalanced(text.substring(1, text.length() - 1))) {
             text = text.substring(1, text.length() - 1);
         }
-
         if (!containsOperator(text)) {
             try {
                 return Double.parseDouble(text.trim());
@@ -179,19 +162,44 @@ public class SCell implements Cell {
                 throw new IllegalArgumentException("Invalid number format: " + text);
             }
         }
-
         int opIndex = findLowestPrecedenceOperator(text);
         if (opIndex == -1) {
             throw new IllegalArgumentException("Invalid formula format");
         }
-
         char operator = text.charAt(opIndex);
         String leftPart = text.substring(0, opIndex).trim();
         String rightPart = text.substring(opIndex + 1).trim();
-
         double leftValue = computForm(leftPart);
         double rightValue = computForm(rightPart);
+        return calculate(leftValue, rightValue, operator);
+    }
 
+   */
+
+    public static double computForm(String text) {
+        text = text.trim();
+        if (text.startsWith("=")) {
+            text = text.substring(1);
+        }
+        while (text.startsWith("(") && text.endsWith(")") && isBalanced(text.substring(1, text.length() - 1))) {
+            text = text.substring(1, text.length() - 1);
+        }
+        if (!containsOperator(text)) {
+            try {
+                return Double.parseDouble(text.trim());
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid number format: " + text);
+            }
+        }
+        int opIndex = findLowestPrecedenceOperator(text);
+        if (opIndex == -1) {
+            throw new IllegalArgumentException("Invalid formula format");
+        }
+        char operator = text.charAt(opIndex);
+        String leftPart = text.substring(0, opIndex).trim();
+        String rightPart = text.substring(opIndex + 1).trim();
+        double leftValue = computForm(leftPart);
+        double rightValue = computForm(rightPart);
         return calculate(leftValue, rightValue, operator);
     }
 
@@ -226,7 +234,6 @@ public class SCell implements Cell {
         int parentheses = 0;
         int addSubIndex = -1;
         int mulDivIndex = -1;
-
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
             if (c == '(') {
@@ -241,7 +248,6 @@ public class SCell implements Cell {
                 }
             }
         }
-
         return addSubIndex != -1 ? addSubIndex : mulDivIndex;
     }
 
