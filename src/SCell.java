@@ -1,56 +1,31 @@
-// Add your documentation below:
-
 import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SCell implements Cell {
-    private String line;
+    private String data;
     private int type;
-    private Ex2Sheet sheet;
-    // Add your code here
+    private int order;
 
     public SCell(String s) {
-        // Add your code here
         setData(s);
-    }
-
-    public void setSeet(Ex2Sheet sheet){
-        this.sheet= sheet;
-    }
-
-    @Override
-    public int getOrder() {
-        if (isNumber(getData())) {
-            return 1;
-        } else if (isForm(getData())) {
-            return 2;
-        }
-        return 0;
     }
 
     @Override
     public String toString() {
-        if(isForm(getData())){
-            double value= computForm(getData());
-            return String.valueOf(value);
-        }
         return getData();
     }
 
     @Override
     public void setData(String s) {
-        line = s;
-        if(isForm(s)){
-            setType(Ex2Utils.NUMBER);
-        } else if (isForm(s)) {
-            setType(Ex2Utils.FORM);
-        } else {
-            setType(Ex2Utils.TEXT);
-        }
+        this.data = (s == null) ? "" : s;
+        determineType();
     }
 
     @Override
     public String getData() {
-        return line;
+        return data;
     }
 
     @Override
@@ -64,60 +39,117 @@ public class SCell implements Cell {
     }
 
     @Override
-    public void setOrder(int t) {
-        // Add your code here
-
+    public boolean setOrder(int t) {
+        if (t < -1) {
+            return false;
+        }
+        order = t;
+        return true;
     }
 
-    public boolean isNumber(String txt) {
-        boolean input = false;
+    @Override
+    public int getOrder() {
+        if (type == Ex2Utils.TEXT || type == Ex2Utils.NUMBER) {
+            return 0;
+        }
+        if (type == Ex2Utils.ERR || type == Ex2Utils.ERR_CYCLE_FORM) {
+            return -1;
+        }
+        if (type != Ex2Utils.FORM) {
+            return 0;
+        }
+
+        List<String> dependencies = findCellReferences(data.substring(1));
+        if (dependencies.isEmpty()) {
+            return 1;
+        }
+        return order;
+    }
+
+    private void determineType() {
+        if (data == null || data.isEmpty()) {
+            setType(Ex2Utils.TEXT);
+            return;
+        }
+
+        if (data.startsWith("=")) {
+            if (isForm(data)) {
+                setType(Ex2Utils.FORM);
+            } else {
+                setType(Ex2Utils.ERR_FORM_FORMAT);
+            }
+            return;
+        }
+
         try {
-            Double.parseDouble(txt);
-            return true;
-        } catch (Exception e) {
-            return false;
+            Double.parseDouble(data);
+            setType(Ex2Utils.NUMBER);
+        } catch (NumberFormatException e) {
+            setType(Ex2Utils.TEXT);
         }
     }
 
-    public boolean isTxt(String text) {
-        return !isNumber(text) && !isForm(text);
+    private List<String> findCellReferences(String formula) {
+        List<String> references = new ArrayList<>();
+        Pattern pattern = Pattern.compile("[A-Za-z]+[0-9]+");
+        Matcher matcher = pattern.matcher(formula);
+        while (matcher.find()) {
+            references.add(matcher.group());
+        }
+        return references;
     }
 
     public static boolean isForm(String txt) {
-        if (txt.contains(" ")) {
+        if (txt == null || !txt.startsWith("=") || txt.contains(" ")) {
             return false;
         }
-        if (!txt.startsWith("=")) {
+
+        String formula = txt.substring(1);
+        if (formula.isEmpty()) {
             return false;
         }
-        txt = txt.substring(1);
-        int balance = 0;
-        char lastChar = ' ';
-        for (int i = 0; i < txt.length(); i++) {
-            char c = txt.charAt(i);
+
+        // Check for valid cell reference format
+        if (formula.matches("[A-Za-z][0-9]+")) {
+            return true;
+        }
+
+        // Check for basic number
+        if (formula.matches("-?\\d+(\\.\\d+)?")) {
+            return true;
+        }
+
+        // Check for valid formula structure
+        int parentheses = 0;
+        boolean lastWasOperator = true; // To prevent starting with an operator
+
+        for (int i = 0; i < formula.length(); i++) {
+            char c = formula.charAt(i);
+
             if (c == '(') {
-                balance++;
+                parentheses++;
+                lastWasOperator = true;
+                continue;
             }
             if (c == ')') {
-                balance--;
+                parentheses--;
+                if (parentheses < 0) return false;
+                lastWasOperator = false;
+                continue;
             }
-            if (balance < 0) {
-                return false;
-            }
+            if (parentheses < 0) return false;
+
             if (isOperator(c)) {
-                if (i == 0 || i == txt.length() - 1) {
-                    return false;
-                }
-                if (isOperator(lastChar)) {
-                    return false;
-                }
+                if (lastWasOperator) return false;
+                lastWasOperator = true;
+                continue;
             }
-            if (!isValidChar(c)) {
-                return false;
-            }
-            lastChar = c;
+
+            if (!isValidChar(c)) return false;
+            lastWasOperator = false;
         }
-        return balance == 0;
+
+        return parentheses == 0 && !lastWasOperator;
     }
 
     private static boolean isOperator(char c) {
@@ -126,109 +158,105 @@ public class SCell implements Cell {
 
     private static boolean isValidChar(char c) {
         return Character.isDigit(c) || isOperator(c) || c == '.' || c == '(' || c == ')'
-                || (c >= 'A' && c <= 'Z');
-    }
-
-    private static double evalCellCall(String cellCall){
-        char columm= cellCall.charAt(0);
-        int row= Integer.parseInt(cellCall.substring(1));
-        int x= columm= 'A';
-        Cell cell= Ex2Sheet.getStaticCell(x, row);
-        if(cell!=null){
-            if (cell.getType()==Ex2Utils.NUMBER){
-                return Double.parseDouble(cell.getData());
-            } else if (cell.getType()==Ex2Utils.FORM) {
-                return computForm(cell.getData());
-            }
-        }
-        return 0;
+                || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
     }
 
     public static double computForm(String text) {
-        if(!isForm(text)){
-            return -1;
+        text = text.trim();
+        if (text.startsWith("=")) {
+            text = text.substring(1);
         }
-        String formula= text.substring(1);
-        if(formula.matches("[A-Z]\\d+")){
-            return evalCellCall(formula);
+
+        // Remove outer parentheses if they match
+        while (text.startsWith("(") && text.endsWith(")") && isBalanced(text.substring(1, text.length() - 1))) {
+            text = text.substring(1, text.length() - 1);
         }
-        computForm calculator= new computForm(formula);
-        return calculator.calculate();
+
+        if (!containsOperator(text)) {
+            try {
+                return Double.parseDouble(text.trim());
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid number format: " + text);
+            }
+        }
+
+        int opIndex = findLowestPrecedenceOperator(text);
+        if (opIndex == -1) {
+            throw new IllegalArgumentException("Invalid formula format");
+        }
+
+        char operator = text.charAt(opIndex);
+        String leftPart = text.substring(0, opIndex).trim();
+        String rightPart = text.substring(opIndex + 1).trim();
+
+        double leftValue = computForm(leftPart);
+        double rightValue = computForm(rightPart);
+
+        return calculate(leftValue, rightValue, operator);
     }
 
-   public static class computForm {
-       private ArrayList<Double> priorties;
-       private String formula;
-       private final double MULTIPLY_PRIORITY = 0.1;
-       private final double ADD_PRIORITY = 0.5;
+    private static boolean containsOperator(String text) {
+        for (int i = 0; i < text.length(); i++) {
+            if (isOperator(text.charAt(i))) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-       public computForm(String formula) {
-           this.formula = formula;
-           this.priorties = new ArrayList<Double>();
-           mapPriorities();
-       }
+    private static double calculate(double leftValue, double rightValue, char operator) {
+        switch (operator) {
+            case '+':
+                return leftValue + rightValue;
+            case '-':
+                return leftValue - rightValue;
+            case '*':
+                return leftValue * rightValue;
+            case '/':
+                if (rightValue == 0) {
+                    throw new ArithmeticException("Division by zero");
+                }
+                return leftValue / rightValue;
+            default:
+                throw new IllegalArgumentException("Unknown operator: " + operator);
+        }
+    }
 
-       private void mapPriorities() {
-           for (int i = 0; i < formula.length(); i++) {
-               char c = formula.charAt(i);
-               if (Character.isDigit(c)) {
-                   priorties.add(null);
-               } else {
-                   if (c == '+' || c == '-') {
-                       priorties.add(ADD_PRIORITY + i);
-                   } else {
-                       if (c == '*' || c == '/') {
-                           priorties.add(MULTIPLY_PRIORITY + i);
-                       }
-                   }
-               }
-           }
-       }
+    private static int findLowestPrecedenceOperator(String text) {
+        int parentheses = 0;
+        int addSubIndex = -1;
+        int mulDivIndex = -1;
 
-       private int findNextOperation() {
-           double minPriority = Double.MAX_VALUE;
-           int minIndex = -1;
-           for (int i = 0; i < priorties.size(); i++) {
-               if (priorties.get(i) != null && priorties.get(i) < minPriority) {
-                   minPriority = priorties.get(i);
-                   minIndex = i;
-               }
-           }
-           return minIndex;
-       }
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == '(') {
+                parentheses++;
+            } else if (c == ')') {
+                parentheses--;
+            } else if (parentheses == 0) {
+                if (c == '+' || c == '-') {
+                    addSubIndex = i;
+                } else if ((c == '*' || c == '/') && addSubIndex == -1) {
+                    mulDivIndex = i;
+                }
+            }
+        }
 
-       public double calculate() {
-           if (formula.length() == 1) {
-               return Double.parseDouble(formula);
-           }
-           int opIndex = findNextOperation();
-           if (opIndex == -1) {
-               return Double.parseDouble(formula);
-           }
-           double result = getResult(opIndex);
-           String newFornula = formula.substring(0, opIndex - 1) + result +
-                   formula.substring(opIndex + 2);
-           computForm newClac = new computForm(newFornula);
-           return newClac.calculate();
-       }
+        return addSubIndex != -1 ? addSubIndex : mulDivIndex;
+    }
 
-       private double getResult(int opIndex) {
-           double num1 = Double.parseDouble(formula.substring(opIndex - 1, opIndex));
-           double num2 = Double.parseDouble(formula.substring(opIndex + 1, opIndex + 2));
-           double result = 0;
-           char operator = formula.charAt(opIndex);
-           if (operator == '+') {
-               result = num1 + num2;
-           } else if (operator == '-') {
-               result = num1 - num2;
-           } else if (operator == '*') {
-               result = num1 * num2;
-           } else if (operator == '/') {
-               result = num1 / num2;
-           }
-           return result;
-       }
-   }
+    private static boolean isBalanced(String text) {
+        int balance = 0;
+        for (char c : text.toCharArray()) {
+            if (c == '(') {
+                balance++;
+            } else if (c == ')') {
+                balance--;
+            }
+            if (balance < 0) {
+                return false;
+            }
+        }
+        return balance == 0;
+    }
 }
-
-

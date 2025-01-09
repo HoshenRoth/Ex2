@@ -103,7 +103,7 @@ public interface Sheet {
      * @param fileName a String representing the full (an absolute or relative path tp the saved file).
      * @throws IOException an exception might be throed if the flie can not be saved.
      */
-    public void save(String fileName) throws IOException;
+    public void save(String fileName) throws IOException, IOException;
     /**
      * Load the content of a saved SpreadSheet into this SpreadSheet.
      * Note: all the old cells in before the load operation will be cleared.
