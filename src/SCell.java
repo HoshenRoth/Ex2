@@ -19,7 +19,7 @@ public class SCell implements Cell {
 
     @Override
     public void setData(String s) {
-        this.data = (s == null) ? "" : s;
+        this.data= (s==null) ? "" : s;
         determineType();
     }
 
@@ -40,38 +40,38 @@ public class SCell implements Cell {
 
     @Override
     public boolean setOrder(int t) {
-        if (t < -1) {
+        if(t<-1) {
             return false;
         }
-        order = t;
+        order=t;
         return true;
     }
 
     @Override
     public int getOrder() {
-        if (type == Ex2Utils.TEXT || type == Ex2Utils.NUMBER) {
+        if(type==Ex2Utils.TEXT || type==Ex2Utils.NUMBER) {
             return 0;
         }
-        if (type == Ex2Utils.ERR || type == Ex2Utils.ERR_CYCLE_FORM) {
+        if(type==Ex2Utils.ERR || type==Ex2Utils.ERR_CYCLE_FORM) {
             return -1;
         }
-        if (type != Ex2Utils.FORM) {
+        if(type!=Ex2Utils.FORM) {
             return 0;
         }
-        List<String> dependencies = findCellReferences(data.substring(1));
-        if (dependencies.isEmpty()) {
+        List<String> dependencies= findCellReferences(data.substring(1));
+        if(dependencies.isEmpty()) {
             return 1;
         }
         return order;
     }
 
     private void determineType() {
-        if (data == null || data.isEmpty()) {
+        if(data==null || data.isEmpty()) {
             setType(Ex2Utils.TEXT);
             return;
         }
-        if (data.startsWith("=")) {
-            if (isForm(data)) {
+        if(data.startsWith("=")) {
+            if(isForm(data)) {
                 setType(Ex2Utils.FORM);
             } else {
                 setType(Ex2Utils.ERR_FORM_FORMAT);
@@ -87,9 +87,9 @@ public class SCell implements Cell {
     }
 
     private List<String> findCellReferences(String formula) {
-        List<String> references = new ArrayList<>();
-        Pattern pattern = Pattern.compile("[A-Za-z]+[0-9]+");
-        Matcher matcher = pattern.matcher(formula);
+        List<String> references= new ArrayList<>();
+        Pattern pattern= Pattern.compile("[A-Za-z]+[0-9]+");
+        Matcher matcher= pattern.matcher(formula);
         while (matcher.find()) {
             references.add(matcher.group());
         }
@@ -97,115 +97,93 @@ public class SCell implements Cell {
     }
 
     public static boolean isForm(String txt) {
-        if (txt == null || !txt.startsWith("=") || txt.contains(" ")) {
+        if(txt==null || !txt.startsWith("=") || txt.contains(" ")) {
             return false;
         }
-        String formula = txt.substring(1);
-        if (formula.isEmpty()) {
+        String formula= txt.substring(1);
+        if(formula.isEmpty()) {
             return false;
         }
-        if (formula.matches("[A-Za-z][0-9]+")) {
+        if(formula.matches("[A-Za-z][0-9]+")) {
             return true;
         }
-        if (formula.matches("-?\\d+(\\.\\d+)?")) {
+        if(formula.matches("-?\\d+(\\.\\d+)?")) {
             return true;
         }
-        int parentheses = 0;
-        boolean lastWasOperator = true;
-        for (int i = 0; i < formula.length(); i++) {
-            char c = formula.charAt(i);
-            if (c == '(') {
+        int parentheses= 0;
+        boolean lastWasOperator= true;
+        for(int i=0; i<formula.length(); i++) {
+            char c= formula.charAt(i);
+            if(c=='(') {
                 parentheses++;
-                lastWasOperator = true;
+                lastWasOperator= true;
                 continue;
             }
-            if (c == ')') {
+            if(c==')') {
                 parentheses--;
-                if (parentheses < 0) return false;
+                if(parentheses<0){
+                    return false;
+                }
                 lastWasOperator = false;
                 continue;
             }
-            if (parentheses < 0) return false;
-
-            if (isOperator(c)) {
-                if (lastWasOperator) return false;
-                lastWasOperator = true;
+            if(parentheses<0){
+                return false;
+            }
+            if(isOperator(c)) {
+                if(lastWasOperator){
+                    return false;
+                }
+                lastWasOperator= true;
                 continue;
             }
-            if (!isValidChar(c)) return false;
+            if(!isValidChar(c)){
+                return false;
+            }
             lastWasOperator = false;
         }
-        return parentheses == 0 && !lastWasOperator;
+        return parentheses==0 && !lastWasOperator;
     }
 
     private static boolean isOperator(char c) {
-        return c == '+' || c == '-' || c == '*' || c == '/';
+        return c=='+' || c=='-' || c=='*' || c=='/';
     }
 
     private static boolean isValidChar(char c) {
-        return Character.isDigit(c) || isOperator(c) || c == '.' || c == '(' || c == ')'
-                || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+        return Character.isDigit(c) || isOperator(c) || c=='.' || c=='(' || c==')'
+                || (c>='A' && c<='Z') || (c>='a' && c<='z');
     }
-
-  /*  public static double computForm(String text) {
-        text = text.trim();
-        if (text.startsWith("=")) {
-            text = text.substring(1);
-        }
-        while (text.startsWith("(") && text.endsWith(")") && isBalanced(text.substring(1, text.length() - 1))) {
-            text = text.substring(1, text.length() - 1);
-        }
-        if (!containsOperator(text)) {
-            try {
-                return Double.parseDouble(text.trim());
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Invalid number format: " + text);
-            }
-        }
-        int opIndex = findLowestPrecedenceOperator(text);
-        if (opIndex == -1) {
-            throw new IllegalArgumentException("Invalid formula format");
-        }
-        char operator = text.charAt(opIndex);
-        String leftPart = text.substring(0, opIndex).trim();
-        String rightPart = text.substring(opIndex + 1).trim();
-        double leftValue = computForm(leftPart);
-        double rightValue = computForm(rightPart);
-        return calculate(leftValue, rightValue, operator);
-    }
-
-   */
 
     public static double computForm(String text) {
-        text = text.trim();
-        if (text.startsWith("=")) {
-            text = text.substring(1);
+        text= text.trim();
+        if(text.startsWith("=")) {
+            text= text.substring(1);
         }
-        while (text.startsWith("(") && text.endsWith(")") && isBalanced(text.substring(1, text.length() - 1))) {
-            text = text.substring(1, text.length() - 1);
+        while(text.startsWith("(") && text.endsWith(")") && isBalanced(text.substring(1, text.length() - 1))) {
+            text= text.substring(1, text.length() - 1);
         }
-        if (!containsOperator(text)) {
-            try {
+        if(!containsOperator(text)) {
+            try{
                 return Double.parseDouble(text.trim());
-            } catch (NumberFormatException e) {
+            } catch(NumberFormatException e) {
                 throw new IllegalArgumentException("Invalid number format: " + text);
             }
         }
-        int opIndex = findLowestPrecedenceOperator(text);
-        if (opIndex == -1) {
+        int opIndex= findLowestPrecedenceOperator(text);
+        if(opIndex== -1) {
             throw new IllegalArgumentException("Invalid formula format");
         }
-        char operator = text.charAt(opIndex);
-        String leftPart = text.substring(0, opIndex).trim();
-        String rightPart = text.substring(opIndex + 1).trim();
-        double leftValue = computForm(leftPart);
-        double rightValue = computForm(rightPart);
+        char operator= text.charAt(opIndex);
+        String leftPart= text.substring(0, opIndex).trim();
+        String rightPart= text.substring(opIndex + 1).trim();
+        double leftValue= computForm(leftPart);
+        double rightValue= computForm(rightPart);
         return calculate(leftValue, rightValue, operator);
     }
 
     private static boolean containsOperator(String text) {
-        for (int i = 0; i < text.length(); i++) {
-            if (isOperator(text.charAt(i))) {
+        for(int i=0; i<text.length(); i++) {
+            if(isOperator(text.charAt(i))) {
                 return true;
             }
         }
@@ -214,37 +192,33 @@ public class SCell implements Cell {
 
     private static double calculate(double leftValue, double rightValue, char operator) {
         switch (operator) {
-            case '+':
-                return leftValue + rightValue;
-            case '-':
-                return leftValue - rightValue;
-            case '*':
-                return leftValue * rightValue;
+            case '+': return leftValue+rightValue;
+            case '-': return leftValue-rightValue;
+            case '*': return leftValue*rightValue;
             case '/':
                 if (rightValue == 0) {
                     throw new ArithmeticException("Division by zero");
                 }
                 return leftValue / rightValue;
-            default:
-                throw new IllegalArgumentException("Unknown operator: " + operator);
+            default: throw new IllegalArgumentException("Unknown operator: " + operator);
         }
     }
 
     private static int findLowestPrecedenceOperator(String text) {
-        int parentheses = 0;
-        int addSubIndex = -1;
-        int mulDivIndex = -1;
-        for (int i = 0; i < text.length(); i++) {
-            char c = text.charAt(i);
-            if (c == '(') {
+        int parentheses= 0;
+        int addSubIndex= -1;
+        int mulDivIndex= -1;
+        for(int i=0; i<text.length(); i++) {
+            char c= text.charAt(i);
+            if(c=='(') {
                 parentheses++;
-            } else if (c == ')') {
+            } else if (c==')') {
                 parentheses--;
-            } else if (parentheses == 0) {
-                if (c == '+' || c == '-') {
-                    addSubIndex = i;
-                } else if ((c == '*' || c == '/') && addSubIndex == -1) {
-                    mulDivIndex = i;
+            } else if (parentheses== 0) {
+                if(c=='+' || c=='-') {
+                    addSubIndex= i;
+                } else if ((c=='*' || c=='/') && addSubIndex== -1) {
+                    mulDivIndex= i;
                 }
             }
         }
@@ -252,17 +226,17 @@ public class SCell implements Cell {
     }
 
     private static boolean isBalanced(String text) {
-        int balance = 0;
-        for (char c : text.toCharArray()) {
-            if (c == '(') {
+        int balance= 0;
+        for(char c: text.toCharArray()) {
+            if(c=='(') {
                 balance++;
-            } else if (c == ')') {
+            } else if (c==')') {
                 balance--;
             }
-            if (balance < 0) {
+            if(balance<0) {
                 return false;
             }
         }
-        return balance == 0;
+        return balance==0;
     }
 }
