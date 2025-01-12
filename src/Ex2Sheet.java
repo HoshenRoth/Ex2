@@ -226,4 +226,17 @@ public class Ex2Sheet implements Sheet {
             return null;
         }
     }
+
+    private boolean hasCyclicReference(int x, int y, Set<String> visited) {
+        String cellId = x + "," + y;
+        if (visited.contains(cellId)) {
+            return true;
+        }
+        visited.add(cellId);
+        return false;
+    }
+
+    public static final String ERR_INVALID_CELL = "#INVALID_CELL";
+
+    public static final String ERR_MATH = "#MATH_ERROR";
 }

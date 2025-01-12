@@ -239,4 +239,13 @@ public class SCell implements Cell {
         }
         return balance==0;
     }
+
+    private boolean isValidNumber(String num) {
+        try {
+            Double.parseDouble(num);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
 }
