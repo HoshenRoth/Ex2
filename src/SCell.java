@@ -100,7 +100,7 @@ public class SCell implements Cell {
         if(txt==null || !txt.startsWith("=") || txt.contains(" ")) {
             return false;
         }
-        String formula= txt.substring(1);
+        String formula = txt.substring(1);
         if(formula.isEmpty()) {
             return false;
         }
@@ -110,39 +110,58 @@ public class SCell implements Cell {
         if(formula.matches("-?\\d+(\\.\\d+)?")) {
             return true;
         }
-        int parentheses= 0;
-        boolean lastWasOperator= true;
+
+        int parentheses = 0;
+        boolean lastWasOperator = true;
+        boolean lastWasNumber = false;  // נוסיף משתנה חדש לעקוב אחרי מספרים
+
         for(int i=0; i<formula.length(); i++) {
-            char c= formula.charAt(i);
-            if(c=='(') {
+            char c = formula.charAt(i);
+
+            if(c == '(') {
+                // נאפשר מכפלה מרומזת אחרי מספר
+                if(lastWasNumber) {
+                    lastWasOperator = false;
+                } else {
+                    lastWasOperator = true;
+                }
                 parentheses++;
-                lastWasOperator= true;
                 continue;
             }
-            if(c==')') {
+
+            if(c == ')') {
                 parentheses--;
-                if(parentheses<0){
+                if(parentheses < 0) {
                     return false;
                 }
                 lastWasOperator = false;
+                lastWasNumber = false;
                 continue;
             }
-            if(parentheses<0){
+
+            if(parentheses < 0) {
                 return false;
             }
+
             if(isOperator(c)) {
-                if(lastWasOperator){
+                if(lastWasOperator) {
                     return false;
                 }
-                lastWasOperator= true;
+                lastWasOperator = true;
+                lastWasNumber = false;
                 continue;
             }
-            if(!isValidChar(c)){
+
+            if(!isValidChar(c)) {
                 return false;
             }
+
+            // עדכון המעקב אחרי מספרים
+            lastWasNumber = Character.isDigit(c);
             lastWasOperator = false;
         }
-        return parentheses==0 && !lastWasOperator;
+
+        return parentheses == 0 && !lastWasOperator;
     }
 
     private static boolean isOperator(char c) {
@@ -155,29 +174,47 @@ public class SCell implements Cell {
     }
 
     public static double computForm(String text) {
-        text= text.trim();
+        text = text.trim();
         if(text.startsWith("=")) {
-            text= text.substring(1);
+            text = text.substring(1);
         }
+
+        // הוספת סימן כפל מפורש לפני סוגריים כשיש מספר לפניהם
+        StringBuilder newText = new StringBuilder();
+        for(int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if(i > 0 && c == '(' && Character.isDigit(text.charAt(i-1))) {
+                newText.append('*');
+            }
+            newText.append(c);
+        }
+        text = newText.toString();
+
         while(text.startsWith("(") && text.endsWith(")") && isBalanced(text.substring(1, text.length() - 1))) {
-            text= text.substring(1, text.length() - 1);
+            text = text.substring(1, text.length() - 1);
         }
+
+        // המשך הפונקציה כרגיל...
         if(!containsOperator(text)) {
-            try{
+            try {
                 return Double.parseDouble(text.trim());
             } catch(NumberFormatException e) {
                 throw new IllegalArgumentException("Invalid number format: " + text);
             }
         }
-        int opIndex= findLowestPrecedenceOperator(text);
-        if(opIndex== -1) {
+
+        int opIndex = findLowestPrecedenceOperator(text);
+        if(opIndex == -1) {
             throw new IllegalArgumentException("Invalid formula format");
         }
-        char operator= text.charAt(opIndex);
-        String leftPart= text.substring(0, opIndex).trim();
-        String rightPart= text.substring(opIndex + 1).trim();
-        double leftValue= computForm(leftPart);
-        double rightValue= computForm(rightPart);
+
+        char operator = text.charAt(opIndex);
+        String leftPart = text.substring(0, opIndex).trim();
+        String rightPart = text.substring(opIndex + 1).trim();
+
+        double leftValue = computForm(leftPart);
+        double rightValue = computForm(rightPart);
+
         return calculate(leftValue, rightValue, operator);
     }
 
